@@ -16,16 +16,17 @@
  */
 package org.apache.dolphinscheduler.alert.utils;
 
-import org.apache.dolphinscheduler.common.enums.ShowType;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import net.lingala.zip4j.ZipFile;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
+import org.apache.dolphinscheduler.common.enums.ShowType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ResourceUtils;
@@ -35,7 +36,8 @@ import javax.mail.internet.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.dolphinscheduler.alert.utils.PropertyUtils.getInt;
+import static org.apache.dolphinscheduler.common.Constants.MSG;
+import static org.apache.dolphinscheduler.common.Constants.STATUS;
 
 
 /**
@@ -113,7 +115,7 @@ public class MailUtils {
      */
     public static Map<String,Object> sendMails(Collection<String> receivers, Collection<String> receiversCc, String title, String content, ShowType showType) {
         Map<String,Object> retMap = new HashMap<>();
-        retMap.put(Constants.STATUS, false);
+        retMap.put(STATUS, false);
         
         // if there is no receivers && no receiversCc, no need to process
         if (CollectionUtils.isEmpty(receivers) && CollectionUtils.isEmpty(receiversCc)) {
@@ -152,11 +154,11 @@ public class MailUtils {
         }else if (showType == ShowType.ATTACHMENT || showType == ShowType.TABLEATTACHMENT){
             try {
 
-                String partContent = (showType == ShowType.ATTACHMENT ? "Please see the attachment " + title + Constants.EXCEL_SUFFIX_XLS : htmlTable(content,false));
+                String partContent = (showType == ShowType.ATTACHMENT ? "Please see the attachment " + title + Constants.EXCEL_SUFFIX_CSV : htmlTable(content,false));
 
-                attachment(receivers,receiversCc,title,content,partContent);
+                attachContent(receivers,receiversCc,title,content,partContent);
 
-                retMap.put(Constants.STATUS, true);
+                retMap.put(STATUS, true);
                 return retMap;
             }catch (Exception e){
                 handleException(receivers, retMap, e);
@@ -255,21 +257,6 @@ public class MailUtils {
         return null;
     }
 
-
-
-
-    /**
-     * send mail as Excel attachment
-     * @param receivers the receiver list
-     * @param title the title
-     * @throws Exception
-     */
-    private static void attachment(Collection<String> receivers,Collection<String> receiversCc,String title,String content,String partContent)throws Exception{
-        MimeMessage msg = getMimeMessage(receivers);
-
-        attachContent(receiversCc, title, content,partContent, msg);
-    }
-
     /**
      * get MimeMessage
      * @param receivers
@@ -326,11 +313,12 @@ public class MailUtils {
      * @param title the title
      * @param content the content
      * @param partContent the partContent
-     * @param msg the message
      * @throws MessagingException
      * @throws IOException
      */
-    private static void attachContent(Collection<String> receiversCc, String title, String content, String partContent,MimeMessage msg) throws MessagingException, IOException {
+    private static void attachContent(Collection<String> receivers, Collection<String> receiversCc, String title, String content, String partContent) throws MessagingException, IOException {
+        MimeMessage msg = getMimeMessage(receivers);
+
         /**
          * set receiverCc
          */
@@ -351,16 +339,32 @@ public class MailUtils {
         // set attach file
         MimeBodyPart part2 = new MimeBodyPart();
         // make excel file
-        ExcelUtils.genExcelFile(content,title,xlsFilePath);
-        File file = new File(xlsFilePath + Constants.SINGLE_SLASH +  title + Constants.EXCEL_SUFFIX_XLS);
+        String excelFileAbsolutePath = xlsFilePath + Constants.SINGLE_SLASH +  title + Constants.EXCEL_SUFFIX_CSV;
+        logger.info("生成excel: {}开始", excelFileAbsolutePath);
+        ExcelUtils.genCsvFile(excelFileAbsolutePath, content);
+        logger.info("生成excel: {}完毕", excelFileAbsolutePath);
+        File file = new File(excelFileAbsolutePath);
+
+        // 文件大小超过10MB则压缩
+        int UncompressedFileThresholdInMB = 10;
+        if(file.length() >  UncompressedFileThresholdInMB * 1024 * 1024){
+            logger.info("文件大小: {}MB, 超过{}MB，准备压缩为zip", file.length() / 1024 / 1024,10);
+            ZipFile zipFile = new ZipFile(file.getAbsolutePath() + ".zip");
+            zipFile.addFile(file);
+            file = zipFile.getFile();
+        }
+
         part2.attachFile(file);
-        part2.setFileName(MimeUtility.encodeText(title + Constants.EXCEL_SUFFIX_XLS,Constants.UTF_8,"B"));
+        logger.debug("file.getName(): {}", file.getName());
+        part2.setFileName(MimeUtility.encodeText(file.getName(),Constants.UTF_8,"B"));
         // add components to collection
         partList.addBodyPart(part1);
         partList.addBodyPart(part2);
         msg.setContent(partList);
         // 5. send Transport
+        logger.info("邮件组装完成，开始发送");
         Transport.send(msg);
+        logger.info("邮件发送完成");
         // 6. delete saved file
         deleteFile(file);
     }
@@ -393,7 +397,7 @@ public class MailUtils {
         // send
         email.send();
 
-        retMap.put(Constants.STATUS, true);
+        retMap.put(STATUS, true);
 
         return retMap;
     }
@@ -423,7 +427,7 @@ public class MailUtils {
      */
     private static void handleException(Collection<String> receivers, Map<String, Object> retMap, Exception e) {
         logger.error("Send email to {} failed", StringUtils.join(",", receivers), e);
-        retMap.put(Constants.MESSAGE, "Send email to {" + StringUtils.join(",", receivers) + "} failed，" + e.toString());
+        retMap.put(MSG, "Send email to {" + StringUtils.join(",", receivers) + "} failed，" + e.toString());
     }
 
     /**

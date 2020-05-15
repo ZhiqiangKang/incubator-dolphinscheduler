@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.dolphinscheduler.common.Constants.STATUS;
+
 /**
  * Enterprise WeChat Manager
  */
@@ -41,7 +43,7 @@ public class EnterpriseWeChatManager {
      */
     public Map<String,Object> send(Alert alert, String token){
         Map<String,Object> retMap = new HashMap<>();
-        retMap.put(Constants.STATUS, false);
+        retMap.put(STATUS, false);
         String agentId = EnterpriseWeChatUtils.enterpriseWeChatAgentId;
         String users = EnterpriseWeChatUtils.enterpriseWeChatUsers;
         List<String> userList = Arrays.asList(users.split(","));
@@ -52,7 +54,7 @@ public class EnterpriseWeChatManager {
         } catch (IOException e) {
             logger.error(e.getMessage(),e);
         }
-        retMap.put(Constants.STATUS, true);
+        retMap.put(STATUS, true);
         return retMap;
     }
 

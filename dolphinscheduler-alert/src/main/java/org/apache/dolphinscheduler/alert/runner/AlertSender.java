@@ -20,7 +20,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dolphinscheduler.alert.manager.EmailManager;
 import org.apache.dolphinscheduler.alert.manager.EnterpriseWeChatManager;
-import org.apache.dolphinscheduler.alert.utils.Constants;
 import org.apache.dolphinscheduler.alert.utils.EnterpriseWeChatUtils;
 import org.apache.dolphinscheduler.common.enums.AlertStatus;
 import org.apache.dolphinscheduler.common.enums.AlertType;
@@ -33,6 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.dolphinscheduler.common.Constants.MSG;
+import static org.apache.dolphinscheduler.common.Constants.STATUS;
 
 /**
  * alert sender
@@ -106,7 +108,7 @@ public class AlertSender{
                 alert.setInfo(retMaps);
             }
 
-            boolean flag = Boolean.parseBoolean(String.valueOf(retMaps.get(Constants.STATUS)));
+            boolean flag = Boolean.parseBoolean(String.valueOf(retMaps.get(STATUS)));
             if (flag) {
                 alertDao.updateAlert(AlertStatus.EXECUTION_SUCCESS, "execution success", alert.getId());
                 logger.info("alert send success");
@@ -121,8 +123,8 @@ public class AlertSender{
                 }
 
             } else {
-                alertDao.updateAlert(AlertStatus.EXECUTION_FAILURE, String.valueOf(retMaps.get(Constants.MESSAGE)), alert.getId());
-                logger.info("alert send error : {}", String.valueOf(retMaps.get(Constants.MESSAGE)));
+                alertDao.updateAlert(AlertStatus.EXECUTION_FAILURE, String.valueOf(retMaps.get(MSG)), alert.getId());
+                logger.info("alert send error : {}", String.valueOf(retMaps.get(MSG)));
             }
         }
 

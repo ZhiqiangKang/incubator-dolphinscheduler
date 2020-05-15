@@ -304,17 +304,18 @@ public class SqlTask extends AbstractTask {
                         resultJSONArray.add(mapOfColValues);
                     }
                     resultSet.close();
-                    logger.debug("execute sql : {}", JSONObject.toJSONString(resultJSONArray, SerializerFeature.WriteMapNullValue));
+
+                    final String content = JSONObject.toJSONString(resultJSONArray, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat);
+                    logger.info("sql resultJSONArray(print index:(0, 10000]) : {}", StringUtils.substring(content, 0, 10000));
 
                     // if there is a result set
                     if (resultJSONArray.size() > 0) {
-                        if (StringUtils.isNotEmpty(sqlParameters.getTitle())) {
-                            sendAttachment(sqlParameters.getTitle(),
-                                    JSONObject.toJSONString(resultJSONArray, SerializerFeature.WriteMapNullValue));
-                        }else{
-                            sendAttachment(taskProps.getNodeName() + " query resultsets ",
-                                    JSONObject.toJSONString(resultJSONArray, SerializerFeature.WriteMapNullValue));
+                        String title = sqlParameters.getTitle();
+                        if (StringUtils.isEmpty(title)) {
+                            title = taskProps.getNodeName() + " query resultset";
                         }
+
+                        sendAttachment(title, content);
                     }
 
                     exitStatusCode = 0;
@@ -407,7 +408,7 @@ public class SqlTask extends AbstractTask {
             Map<String, Object> mailResult = MailUtils.sendMails(receviersList,
                     receviersCcList, title, content, ShowType.valueOf(showTypeName));
             if(!(Boolean) mailResult.get(STATUS)){
-                throw new RuntimeException("send mail failed!");
+                throw new RuntimeException("send mail failed! reason: " + mailResult.get(MSG));
             }
         }else{
             logger.error("showType: {} is not valid "  ,showTypeName);

@@ -35,10 +35,6 @@ public class Constants {
      */
     public static final String UTF_8 = "UTF-8";
 
-    public static final String STATUS = "status";
-
-    public static final String MESSAGE = "message";
-
     public static final String MAIL_PROTOCOL = "mail.protocol";
 
     public static final String MAIL_SERVER_HOST = "mail.server.host";
@@ -72,6 +68,8 @@ public class Constants {
     public static final String STRING_TRUE = "true";
 
     public static final String EXCEL_SUFFIX_XLS = ".xls";
+
+    public static final String EXCEL_SUFFIX_CSV = ".csv";
 
     public static final int NUMBER_1000 = 1000;
 
