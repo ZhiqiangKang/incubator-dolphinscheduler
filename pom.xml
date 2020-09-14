@@ -84,7 +84,8 @@
 		<commons.httpclient>3.0.1</commons.httpclient>
 		<commons.beanutils.version>1.7.0</commons.beanutils.version>
 		<commons.configuration.version>1.10</commons.configuration.version>
-		<commons.email.version>1.5</commons.email.version>
+<!--		<commons.email.version>1.5</commons.email.version>-->
+		<javax.mail.version>1.4.7</javax.mail.version>
 		<poi.version>4.1.2</poi.version>
 		<zip4j.version>2.5.2</zip4j.version>
 		<freemarker.version>2.3.21</freemarker.version>
@@ -367,12 +368,17 @@
 				<version>${logback.version}</version>
 			</dependency>
 
-
 			<dependency>
-				<groupId>org.apache.commons</groupId>
-				<artifactId>commons-email</artifactId>
-				<version>${commons.email.version}</version>
+				<groupId>javax.mail</groupId>
+				<artifactId>mail</artifactId>
+				<version>1.4.7</version>
 			</dependency>
+
+<!--			<dependency>-->
+<!--				<groupId>org.apache.commons</groupId>-->
+<!--				<artifactId>commons-email</artifactId>-->
+<!--				<version>${commons.email.version}</version>-->
+<!--			</dependency>-->
 
 			<!--excel poi-->
 			<dependency>

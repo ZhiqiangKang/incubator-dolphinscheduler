@@ -24,8 +24,6 @@ import net.lingala.zip4j.ZipFile;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.mail.EmailException;
-import org.apache.commons.mail.HtmlEmail;
 import org.apache.dolphinscheduler.common.enums.ShowType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,35 +124,35 @@ public class MailUtils {
         
         if (showType == ShowType.TABLE || showType == ShowType.TEXT){
             // send email
-            HtmlEmail email = new HtmlEmail();
+//            HtmlEmail email = new HtmlEmail();
 
             try {
-                Session session = getSession();
-                email.setMailSession(session);
-                email.setFrom(mailSender);
-                email.setCharset(Constants.UTF_8);
-                if (CollectionUtils.isNotEmpty(receivers)){
-                    // receivers mail
-                    for (String receiver : receivers) {
-                        email.addTo(receiver);
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(receiversCc)){
-                    //cc
-                    for (String receiverCc : receiversCc) {
-                        email.addCc(receiverCc);
-                    }
-                }
+//                Session session = getSession();
+//                email.setMailSession(session);
+//                email.setFrom(mailSender);
+//                email.setCharset(Constants.UTF_8);
+//                if (CollectionUtils.isNotEmpty(receivers)){
+//                    // receivers mail
+//                    for (String receiver : receivers) {
+//                        email.addTo(receiver);
+//                    }
+//                }
+//
+//                if (CollectionUtils.isNotEmpty(receiversCc)){
+//                    //cc
+//                    for (String receiverCc : receiversCc) {
+//                        email.addCc(receiverCc);
+//                    }
+//                }
                 // sender mail
-                return getStringObjectMap(title, content, showType, retMap, email);
+                return getStringObjectMap(receivers, receiversCc, title, content, showType, retMap);
             } catch (Exception e) {
                 handleException(receivers, retMap, e);
             }
         }else if (showType == ShowType.ATTACHMENT || showType == ShowType.TABLEATTACHMENT){
             try {
 
-                String partContent = (showType == ShowType.ATTACHMENT ? "Please see the attachment " + title + Constants.EXCEL_SUFFIX_CSV : htmlTable(content,false));
+                String partContent = (showType == ShowType.ATTACHMENT ? "Please see the attachment 《" + title + Constants.EXCEL_SUFFIX_CSV + "》" : htmlTable(content,false));
 
                 attachContent(receivers,receiversCc,title,content,partContent);
 
@@ -374,28 +372,42 @@ public class MailUtils {
      * @param title the title
      * @param content the content
      * @param showType the showType
-     * @param retMap the result map
-     * @param email the email
+     * @param retMap the result maps
      * @return the result map
-     * @throws EmailException
      */
-    private static Map<String, Object> getStringObjectMap(String title, String content, ShowType showType, Map<String, Object> retMap, HtmlEmail email) throws EmailException {
+    private static Map<String, Object> getStringObjectMap(Collection<String> receivers, Collection<String> receiversCc, String title, String content, ShowType showType, Map<String, Object> retMap) throws MessagingException {
+
+        MimeMessage msg = getMimeMessage(receivers);
 
         /**
-         * the subject of the message to be sent
+         * set receiverCc
          */
-        email.setSubject(title);
+        if(CollectionUtils.isNotEmpty(receiversCc)){
+            for (String receiverCc : receiversCc){
+                msg.addRecipients(MimeMessage.RecipientType.CC, InternetAddress.parse(receiverCc));
+            }
+        }
+
+        // set receivers type to cc
+        // msg.addRecipients(MimeMessage.RecipientType.CC, InternetAddress.parse(propMap.get("${CC}")));
+        // set subject
+        msg.setSubject(title);
+        MimeMultipart partList = new MimeMultipart();
+        MimeBodyPart part = new MimeBodyPart();
+
         /**
          * to send information, you can use HTML tags in mail content because of the use of HtmlEmail
          */
         if (showType == ShowType.TABLE) {
-            email.setMsg(htmlTable(content));
+            part.setContent(htmlTable(content), Constants.TEXT_HTML_CHARSET_UTF_8);
         } else if (showType == ShowType.TEXT) {
-            email.setMsg(htmlText(content));
+            part.setContent(htmlText(content), Constants.TEXT_HTML_CHARSET_UTF_8);
         }
+        partList.addBodyPart(part);
+        msg.setContent(partList);
 
         // send
-        email.send();
+        Transport.send(msg);
 
         retMap.put(STATUS, true);
 
